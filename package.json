@@ -10,7 +10,10 @@
     "devStart": "nodemon server.js"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "@google/genai": "^1.30.0",
+    "express": "^5.1.0",
+    "zod": "^4.1.12",
+    "zod-to-json-schema": "^3.25.0"
   },
   "devDependencies": {
     "cors": "^2.8.5",
