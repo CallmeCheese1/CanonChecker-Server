@@ -4,6 +4,8 @@ const app = express()
 const cors = require('cors')
 const port = 3000
 
+const { GoogleGenAI } = require("@google/genai")
+
 const myAPIKey = process.env.GOOGLE_API_KEY
 
 const ai = new GoogleGenAI({
@@ -82,4 +84,12 @@ app.post('/check-this', async (req, res) => {
         response: geminiResponse
     })
 })
+
+app.get('/', (req, res) => {
+    console.log("We're in the / GET request")
+    res.status(200).json({
+        message: "Hello World!"
+    })
+})
+
 app.listen(3000)
