@@ -1,10 +1,10 @@
 const express = require('express')
+require('dotenv').config()
 const app = express()
 const cors = require('cors')
 const port = 3000
 
-
-const myAPIKey = ""
+const myAPIKey = process.env.GOOGLE_API_KEY
 
 const ai = new GoogleGenAI({
     apiKey: myAPIKey
@@ -69,13 +69,17 @@ async function checkContradictions(text) {
 }
 
 app.use(cors())
-app.get('/check-this', (req, res) => {
+app.use(express.json())
+
+app.post('/check-this', async (req, res) => {
     console.log("Processing and returning Gemini response from checking prose...")
     
-    geminiResponse = checkContradictions()
+    const { text } = req.body
+
+    const geminiResponse = checkContradictions(text)
     
     res.status(200).json({
-        response: "Hello World!"
+        response: geminiResponse
     })
 })
 app.listen(3000)

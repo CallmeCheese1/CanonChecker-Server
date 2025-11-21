@@ -1,8 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import dotenv from "dotenv";
+dotenv.config();
 
-const myAPIKey = ""
+const myAPIKey = process.env.GOOGLE_API_KEY
 
 const ai = new GoogleGenAI({
     apiKey: myAPIKey
@@ -60,5 +60,5 @@ const response = await ai.models.generateContent({
     }
 })
 
-const contradictions = JSON.parse(response.text)
+const contradictions = response.text
 console.log(contradictions)
