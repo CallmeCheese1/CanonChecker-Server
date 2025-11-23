@@ -13,45 +13,66 @@ const ai = new GoogleGenAI({
 })
 
 const systemInstructions = `
-You're are the brains of the CanonChecker system, an application to identify and point out contradictions for fiction writers. You will be sent prompts of prose that needs to be checked for any contradicting character details. ONLY respond in JSONs. NOTHING ELSE BUT JSON. The system with ERROR if you do not respond with JSON. Here is the required format, with description of each parameter:
+You are the brains of the CanonChecker system, an application to identify and point out contradictions for fiction writers. You will be sent numbered lines of prose that need to be checked for any contradicting character, setting, or timeline details. ONLY respond in JSON: a single array of one or more contradiction objects. NOTHING ELSE BUT JSON. The system will ERROR if you do not respond with JSON. Required object shape:
 
 {
-    id: INTEGER of contradiction, starting from 1,
-    type: STRING, one word, Character, Setting, or Timeline,
-    page: INTEGER, estimate page number of contradiction,
-    quote: STRING, surrounded by single quotes, using double quotes, quoting the exact detail that contradicts",
-    explanation: STRING, explain what this contradicts and from where, mentioning the exact line of the original detail.",
+    id: INTEGER (starting from 1, incrementing by 1 for each contradiction),
+    type: STRING one of Character, Setting, or Timeline (use ERROR only for an error object),
+    line: INTEGER line number where the contradictory quote appears,
+    page: INTEGER estimated page number (assume ~300 words per page; rough estimate),
+    quote: STRING exact contradictory detail wrapped in double quotes,
+    explanation: STRING describing what it contradicts, citing earlier line number(s).
 }
 
-DO NOT deviate from this format. DO NOT begin or end your response with "\`\`\`json
-[". Immeddiately start with the {} of JSON. Here is an example output:
+Return an ARRAY like:
+[
+    {
+        id: 1,
+        type: "Character",
+        line: 42,
+        page: 5,
+        quote: "Her eyes, a deep, chocolate brown...",
+        explanation: "Contradicts description on line 7 (page 1): \"Her eyes were the color of the summer sky.\""
+    },
+    {
+        id: 2,
+        type: "Setting",
+        line: 88,
+        page: 7,
+        quote: "Snow covered the desert floor...",
+        explanation: "Contradicts line 12 (page 1) describing \"blistering heat and endless dunes\"."
+    }
+]
 
-{
-    id: 1,
-    type: "Character",
-    page: 12,
-    quote: "Her eyes, a deep, chocolate brown...",
-    explanation: "Contradicts description on page 3: \"Her eyes were the color of the summer sky.\"",
-}
+If you encounter a parsing or instruction error, return a ONE-ELEMENT ARRAY with an ERROR object:
+[
+    {
+        id: 1,
+        type: "ERROR",
+        line: 0,
+        page: 0,
+        quote: "ERROR",
+        explanation: "Explain why it's an error."
+    }
+]
 
-If you encounter an error, ONLY respond like this:
-
-{
-    id: 1,
-    type: "ERROR",
-    page: 0,
-    quote: "ERROR",
-    explanation: Explain why it's an error.,
-}
-
+Do NOT use code fences. Do NOT include any text before or after the JSON array.
 `
 
-async function checkContradictions(text) {
+function numberLines(text) {
+    return text
+        .split(/\r?\n/)
+        .map((line, idx) => `${idx + 1}: ${line}`)
+        .join('\n')
+}
+
+async function checkContradictions(rawText) {
+    const numbered = numberLines(rawText)
 
     const prompt = `
-    Contradiction check the following prose:
+    Identify ALL contradictions in the following numbered prose. Use provided line numbers. Return an ARRAY of contradiction objects (or a single ERROR object in an array). Estimate page numbers (~300 words/page).:
 
-    ${text}
+${numbered}
     `
 
     const response = await ai.models.generateContent({
@@ -59,11 +80,7 @@ async function checkContradictions(text) {
         contents: prompt,
         config: {
             systemInstruction: systemInstructions,
-            //thinkingConfig: {
-            //    thinkingBudget: 0, //Stops it from thinking.
-            //},
             responseMimeType: "application/json",
-            //responseJsonSchema: //zodToJsonSchema(recipeSchema),
         }
     })
 
