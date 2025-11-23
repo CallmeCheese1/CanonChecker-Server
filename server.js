@@ -6,6 +6,8 @@ const port = 3000
 
 const { GoogleGenAI } = require("@google/genai")
 
+//hello
+
 const myAPIKey = process.env.GOOGLE_API_KEY
 
 const ai = new GoogleGenAI({
