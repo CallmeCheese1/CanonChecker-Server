@@ -76,7 +76,7 @@ app.use(express.json())
 app.post('/check-this', async (req, res) => {
     console.log("Processing and returning Gemini response from checking prose...")
     
-    const { text } = req.body
+    const { text } = req.text
 
     const geminiResponse = checkContradictions(text)
     

@@ -47,7 +47,25 @@ If you encounter an error, ONLY respond like this:
 
 `
 
-const response = await ai.models.generateContent({
+console.log("Sending checking request...")
+fetch('https://canonchecker-server.onrender.com/check-this', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'applucation/json'
+    },
+    body: JSON.stringify({
+        text: prompt
+    })
+})
+    .then(response => response.json())
+    .then(data => {
+        console.log(data.response)
+    })
+    .catch(error => {
+        console.log('There was an error: ' + error)
+    })
+
+/*const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: prompt,
     config: {
@@ -58,7 +76,4 @@ const response = await ai.models.generateContent({
         responseMimeType: "application/json",
         //responseJsonSchema: //zodToJsonSchema(recipeSchema),
     }
-})
-
-const contradictions = response.text
-console.log(contradictions)
+})*/
