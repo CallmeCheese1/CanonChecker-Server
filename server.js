@@ -80,9 +80,9 @@ app.post('/check-this', async (req, res) => {
     console.log("Request body: ")
     console.log(req.body)
     
-    const { text } = req.body.text
+    const { text } = req.body
 
-    const geminiResponse = checkContradictions(text)
+    const geminiResponse = await checkContradictions(text)
     
     res.status(200).json({
         response: geminiResponse

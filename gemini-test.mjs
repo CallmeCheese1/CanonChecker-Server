@@ -51,7 +51,7 @@ console.log("Sending checking request...")
 fetch('https://canonchecker-server.onrender.com/check-this', {
     method: 'POST',
     headers: {
-        'Content-Type': 'applucation/json'
+        'Content-Type': 'application/json'
     },
     body: JSON.stringify({
         text: prompt
