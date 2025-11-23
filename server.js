@@ -74,11 +74,6 @@ app.use(cors())
 app.use(express.json())
 
 app.post('/check-this', async (req, res) => {
-    console.log("Processing and returning Gemini response from checking prose...")
-    console.log("Full request: ")
-    console.log(req)
-    console.log("Request body: ")
-    console.log(req.body)
     
     const { text } = req.body
 

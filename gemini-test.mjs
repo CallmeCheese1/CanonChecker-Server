@@ -47,6 +47,30 @@ If you encounter an error, ONLY respond like this:
 
 `
 
+var mockContradictions = [
+  {
+    id: 1,
+    type: 'Character',
+    line: 3,
+    quote: 'his squad of three soldiers',
+    explanation: "Contradicts the description on line 1: 'completely alone'."
+  },
+  {
+    id: 2,
+    type: 'Setting',
+    line: 3,
+    quote: 'the bright noon sunlight',
+    explanation: "Contradicts the description on line 1: 'pitch black night'."
+  },
+  {
+    id: 3,
+    type: 'Character',
+    line: 4,
+    quote: 'a dark brown eye',
+    explanation: "Contradicts the description on line 2: 'piercing blue eyes'."
+  }
+];
+
 console.log("Sending checking request...")
 fetch('https://canonchecker-server.onrender.com/check-this', {
     method: 'POST',
@@ -59,7 +83,8 @@ fetch('https://canonchecker-server.onrender.com/check-this', {
 })
     .then(response => response.json())
     .then(data => {
-        console.log(data.response)
+        mockContradictions = data.response
+        console.log(mockContradictions)
     })
     .catch(error => {
         console.log('There was an error: ' + error)
