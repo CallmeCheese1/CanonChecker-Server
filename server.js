@@ -13,84 +13,59 @@ const ai = new GoogleGenAI({
 })
 
 const systemInstructions = `
-You are the brains of the CanonChecker system, an application to identify and point out contradictions for fiction writers. You will be sent NUMBERED lines of prose to check for contradictions in character, setting, or timeline details.
+You are the brains of the CanonChecker system, an application to identify contradictions for fiction writers.
 
 RETROACTIVE CONTRADICTION RULE (IMPORTANT):
-• Only flag the LATER (retroactive) statement that introduces the contradiction.
-• Do NOT flag the earlier baseline statement on its own.
-• The "quote" field must be the exact later phrase/text that conflicts with earlier established details.
-• The "explanation" must cite the earlier line number(s) and briefly describe the mismatch.
-• If multiple earlier lines conflict with one later line, cite all relevant earlier line numbers succinctly.
-• Ignore speculative or uncertain statements (e.g., guesses, questions, conditional statements) unless a later line DEFINITIVELY contradicts them.
-• Do not produce forward-looking predictions. Output only contradictions that have already occurred in the provided text.
+• Only flag the LATER statement that introduces a contradiction with an earlier established detail.
+• Do NOT flag the earlier baseline statement by itself.
+• "quote" must be the exact later contradictory text (double quotes).
+• "explanation" briefly states what earlier detail it contradicts (use natural language; earlier quote may be paraphrased or quoted).
+• Ignore speculative/conditional statements unless later text definitively contradicts them.
+• Do not predict future contradictions. Only use information present in the given prose.
+• If the same contradictory detail repeats, include only the first occurrence.
 
 OUTPUT RULES (STRICT):
-1. ONLY respond in JSON: a single JSON array.
-2. NOTHING ELSE BUT JSON. No code fences, no commentary.
-3. Each contradiction object shape:
+1. Respond ONLY with a single JSON array.
+2. No code fences, no surrounding commentary.
+3. Each contradiction object must have exactly these fields:
      {
-         id: INTEGER starting at 1 and incrementing by 1,
+         id: INTEGER starting at 1 and incrementing,
          type: STRING one of Character | Setting | Timeline,
-         line: INTEGER line number of the later contradictory quote (NOT the earlier baseline),
-         page: INTEGER estimated page number (assume ~300 words per page; rough estimate),
          quote: STRING exact later contradictory detail (double quotes),
-         explanation: STRING citing earlier line number(s) and describing the conflict.
+         explanation: STRING describing conflict with earlier text.
      }
-4. ZERO contradictions → return EMPTY ARRAY: []
-5. Error/parse issue → return ONE-ELEMENT ARRAY with ERROR object:
-     [{ id: 1, type: "ERROR", line: 0, page: 0, quote: "ERROR", explanation: "Explain why it's an error." }]
-6. Do NOT duplicate contradictions: if multiple later lines repeat the SAME conflicting detail, include only the first occurrence.
+4. If there are ZERO contradictions, return []
+5. On error, return: [{ id: 1, type: "ERROR", quote: "ERROR", explanation: "Explain why it's an error." }]
 
-EXAMPLE (retroactive contradictions):
-Text excerpt (numbered lines):
-7: Her eyes were the color of the summer sky.
-42: Her eyes, a deep, chocolate brown, narrowed.
-88: Snow covered the desert floor.
-12: Blistering heat and endless dunes stretched beyond the caravan.
-
-Expected JSON:
+EXAMPLE (multiple contradictions):
 [
     {
         "id": 1,
         "type": "Character",
-        "line": 42,
-        "page": 5,
         "quote": "Her eyes, a deep, chocolate brown, narrowed.",
-        "explanation": "Contradicts eye color stated on line 7: 'Her eyes were the color of the summer sky.'"
+        "explanation": "Later eye color conflicts with earlier blue description."
     },
     {
         "id": 2,
         "type": "Setting",
-        "line": 88,
-        "page": 7,
         "quote": "Snow covered the desert floor.",
-        "explanation": "Conflicts with hot desert conditions on line 12: 'Blistering heat and endless dunes...'"
+        "explanation": "Snowy desert conflicts with earlier blistering heat description."
     }
 ]
 
-EXAMPLE (no contradictions):
-[]
+EXAMPLE (no contradictions): []
+EXAMPLE (error): [{ "id": 1, "type": "ERROR", "quote": "ERROR", "explanation": "Explain why it's an error." }]
 
-EXAMPLE (error):
-[{ "id": 1, "type": "ERROR", "line": 0, "page": 0, "quote": "ERROR", "explanation": "Explain why it's an error." }]
-
-DO NOT include any text before or after the JSON array.
+Return ONLY the JSON array.
 `
 
-function numberLines(text) {
-    return text
-        .split(/\r?\n/)
-        .map((line, idx) => `${idx + 1}: ${line}`)
-        .join('\n')
-}
+// (Line numbering removed – contradictions rely solely on quote text now.)
 
 async function checkContradictions(rawText) {
-    const numbered = numberLines(rawText)
-
     const prompt = `
-    Identify ALL contradictions in the following numbered prose. Use provided line numbers. Return an ARRAY of contradiction objects (or a single ERROR object in an array). Estimate page numbers (~300 words/page).:
+Identify ALL retroactive contradictions in the following prose. Follow the JSON schema exactly:
 
-${numbered}
+${rawText}
     `
 
     try {
@@ -102,14 +77,19 @@ ${numbered}
                 responseMimeType: "application/json",
             }
         })
-        const parsed = JSON.parse(response.text)
-        // Normalize: if a single object was returned accidentally, wrap in array.
-        if (!Array.isArray(parsed)) {
-            return [parsed]
-        }
-        return parsed
+        let parsed = JSON.parse(response.text)
+        if (!Array.isArray(parsed)) parsed = [parsed]
+        // Sanitize: keep only allowed fields
+        return parsed.map((obj, idx) => {
+            return {
+                id: typeof obj.id === 'number' ? obj.id : idx + 1,
+                type: typeof obj.type === 'string' ? obj.type : 'ERROR',
+                quote: typeof obj.quote === 'string' ? obj.quote : 'ERROR',
+                explanation: typeof obj.explanation === 'string' ? obj.explanation : 'Missing explanation'
+            }
+        })
     } catch (err) {
-        return [{ id: 1, type: "ERROR", line: 0, page: 0, quote: "ERROR", explanation: `Model or parse error: ${err.message}` }]
+        return [{ id: 1, type: "ERROR", quote: "ERROR", explanation: `Model or parse error: ${err.message}` }]
     }
 }
 
