@@ -1,6 +1,6 @@
 # CanonChecker Server
 
-This repository contains the server-side code for CanonChecker. It handles backend logic, API endpoints, and data management for the application.
+This repository contains the server-side code for CanonChecker. It handles backend logic, API endpoints, and data management for the application. CanonChecker was a project for Technology Entrepreneurship in Fall 2025, and was hosted on a free plan of Render.
 
 ## Getting Started
 
